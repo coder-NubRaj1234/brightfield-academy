@@ -1,5 +1,6 @@
+import emailjs from "@emailjs/browser";
 import { CheckCircle, Mail, MapPin, Phone, Send } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface FormState {
   name: string;
@@ -13,6 +14,15 @@ interface FormErrors {
   message?: string;
 }
 
+interface SchoolInfo {
+  School_Address: string;
+  "School_Phone_Number_Primary ": string;
+  School_Phone_Number_Secondary: string;
+  School_Address_Map_URL: string;
+  School_Email_Address_Primary: string;
+  School_Email_Address_Secondary: string;
+}
+
 export default function Contact() {
   const [form, setForm] = useState<FormState>({
     name: "",
@@ -23,6 +33,17 @@ export default function Contact() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
+
+  // ✅ Fetch school info from API
+  useEffect(() => {
+    fetch(
+      "https://opensheet.elk.sh/1HfA4gg_fyUkrgWRpRdvX71WDAso5aoUGVJ6JTae47iQ/School_Info_for_Contact_Section"
+    )
+      .then((res) => res.json())
+      .then((data) => setSchoolInfo(data[0]))
+      .catch((err) => console.error("Failed to fetch school info:", err));
+  }, []);
 
   const validate = (f: FormState): FormErrors => {
     const e: FormErrors = {};
@@ -53,13 +74,31 @@ export default function Contact() {
     const errs = validate(form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      setSubmitted(true);
-      setForm({ name: "", email: "", message: "" });
-      setTouched({});
-    }, 1200);
+
+    emailjs
+      .send(
+        "service_6dekmtf",
+        "template_zeuxvth",
+        {
+          name: form.name,
+          email: form.email,
+          message: form.message,
+          time: new Date().toLocaleString(),
+        },
+        "3cwUjPIsF0gKXOm_U"
+      )
+      .then(() => {
+        setSubmitting(false);
+        setSubmitted(true);
+        setForm({ name: "", email: "", message: "" });
+        setTouched({});
+      })
+      .catch(() => {
+        setSubmitting(false);
+        alert("Something went wrong. Please try again.");
+      });
   };
 
   const inputClass = (field: keyof FormState) =>
@@ -71,41 +110,43 @@ export default function Contact() {
           : "border-gray-200 focus:ring-school-navy/30"
     }`;
 
+
   return (
-    <section id="contact" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-12 reveal">
-          <p className="text-school-gold font-semibold uppercase tracking-widest text-sm mb-2">
+    <section id="contact" className="py-20 bg-white ">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6">
+        <div className="mb-12 text-center reveal">
+          <p className="mb-2 text-sm font-semibold tracking-widest uppercase text-school-gold">
             Contact Us
           </p>
           <h2 className="text-3xl font-bold uppercase text-school-navy">
             Get In Touch
           </h2>
-          <p className="text-school-muted mt-3 max-w-xl mx-auto text-sm">
+          <p className="max-w-xl mx-auto mt-3 text-sm text-school-muted">
             We&apos;d love to hear from you. Send us a message and we&apos;ll
             respond as soon as possible.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          {/* ── Left: Form ── */}
           <div className="reveal-left">
             {submitted ? (
               <div
                 data-ocid="contact.success_state"
-                className="h-full flex flex-col items-center justify-center py-16 text-center"
+                className="flex flex-col items-center justify-center h-full py-16 text-center"
               >
-                <CheckCircle size={64} className="text-green-500 mb-4" />
-                <h3 className="text-xl font-bold text-school-navy mb-2">
+                <CheckCircle size={64} className="mb-4 text-green-500" />
+                <h3 className="mb-2 text-xl font-bold text-school-navy">
                   Message Sent!
                 </h3>
-                <p className="text-school-muted text-sm">
+                <p className="text-sm text-school-muted">
                   Thank you for contacting us. We&apos;ll get back to you within
                   24 hours.
                 </p>
                 <button
                   type="button"
                   onClick={() => setSubmitted(false)}
-                  className="mt-6 text-school-gold font-semibold text-sm hover:underline"
+                  className="mt-6 text-sm font-semibold text-school-gold hover:underline"
                 >
                   Send another message
                 </button>
@@ -136,7 +177,7 @@ export default function Contact() {
                   {touched.name && errors.name && (
                     <p
                       data-ocid="contact.name_error"
-                      className="text-red-500 text-xs mt-1"
+                      className="mt-1 text-xs text-red-500"
                     >
                       {errors.name}
                     </p>
@@ -163,7 +204,7 @@ export default function Contact() {
                   {touched.email && errors.email && (
                     <p
                       data-ocid="contact.email_error"
-                      className="text-red-500 text-xs mt-1"
+                      className="mt-1 text-xs text-red-500"
                     >
                       {errors.email}
                     </p>
@@ -190,7 +231,7 @@ export default function Contact() {
                   {touched.message && errors.message && (
                     <p
                       data-ocid="contact.field_error"
-                      className="text-red-500 text-xs mt-1"
+                      className="mt-1 text-xs text-red-500"
                     >
                       {errors.message}
                     </p>
@@ -204,7 +245,7 @@ export default function Contact() {
                   className="w-full flex items-center justify-center gap-2 bg-school-navy text-white font-bold uppercase tracking-wide py-3 rounded-lg hover:bg-blue-900 hover:scale-[1.02] hover:shadow-lg transition-all duration-200 disabled:opacity-70"
                 >
                   {submitting ? (
-                    <span className="animate-spin-loader inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    <span className="inline-block w-4 h-4 border-2 border-white rounded-full animate-spin-loader border-t-transparent" />
                   ) : (
                     <Send size={16} />
                   )}
@@ -214,52 +255,109 @@ export default function Contact() {
             )}
           </div>
 
-          <div className="reveal-right space-y-6">
-            <div className="bg-school-lightgray rounded-2xl p-8 space-y-6">
-              {[
-                {
-                  icon: MapPin,
-                  label: "Our Address",
-                  value: "14, Nehru Vihar, Timarpur,\nDelhi – 110054, India",
-                },
-                {
-                  icon: Phone,
-                  label: "Phone Number",
-                  value: "+91 11 2345 6789\n+91 98765 43210",
-                },
-                {
-                  icon: Mail,
-                  label: "Email Address",
-                  value: "info@brightfuture.edu\nadmissions@brightfuture.edu",
-                },
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex gap-4">
-                  <div className="w-12 h-12 bg-school-navy rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Icon size={20} className="text-school-gold" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-school-muted mb-1">
-                      {label}
-                    </p>
-                    <p className="text-sm text-school-text font-medium whitespace-pre-line">
-                      {value}
+          {/* ── Right: Info + Map ── */}
+          <div className="space-y-6 reveal-right">
+            {/* Contact Info Cards */}
+            <div className="p-8 space-y-6 bg-school-lightgray rounded-2xl">
+              {/* Address */}
+              <div className="flex gap-4">
+                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-school-navy rounded-xl">
+                  <MapPin size={20} className="text-school-gold" />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-semibold tracking-wide uppercase text-school-muted">
+                    Our Address
+                  </p>
+                  <p className="text-sm font-medium text-school-text">
+                    {schoolInfo?.School_Address ?? "Loading..."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div className="flex gap-4">
+                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-school-navy rounded-xl">
+                  <Phone size={20} className="text-school-gold" />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-semibold tracking-wide uppercase text-school-muted">
+                    Phone Number
+                  </p>
+              <p className="text-sm font-medium text-school-text">
+  {schoolInfo?.["School_Phone_Number_Primary "] ?? "Loading..."}
+</p>
+<p className="text-sm font-medium text-school-text">
+  {schoolInfo?.School_Phone_Number_Secondary ?? ""}
+</p>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex gap-4">
+                <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-school-navy rounded-xl">
+                  <Mail size={20} className="text-school-gold" />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-semibold tracking-wide uppercase text-school-muted">
+                    Email Address
+                  </p>
+                  <p className="text-sm font-medium text-school-text">
+                    {schoolInfo?.School_Email_Address_Primary ?? "Loading..."}
+                  </p>
+                  <p className="text-sm font-medium text-school-text">
+                    {schoolInfo?.School_Email_Address_Secondary ?? ""}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ✅ Google Map Embed */}
+            <div className="h-56 overflow-hidden rounded-2xl bg-school-lightgray">
+              {schoolInfo ? (
+                <iframe
+                  title="School Location"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                    schoolInfo.School_Address,
+                  )}&output=embed`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <MapPin
+                      size={32}
+                      className="mx-auto mb-2 text-school-navy"
+                    />
+                    <p className="text-sm font-medium text-school-muted">
+                      Loading map...
                     </p>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
 
-            <div className="bg-school-lightgray rounded-2xl overflow-hidden h-48 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin size={32} className="text-school-navy mx-auto mb-2" />
-                <p className="text-sm text-school-muted font-medium">
-                  Delhi – 110054, India
-                </p>
-              </div>
-            </div>
+            {/* ✅ Open in Google Maps button */}
+            {schoolInfo && (
+              <a
+                href={schoolInfo.School_Address_Map_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-school-navy text-school-navy text-sm font-semibold hover:bg-school-navy hover:text-white transition-all duration-200"
+              >
+                <MapPin size={16} />
+                Open in Google Maps
+              </a>
+            )}
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+
